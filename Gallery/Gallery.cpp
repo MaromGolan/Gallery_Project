@@ -3,6 +3,10 @@
 #include "MemoryAccess.h"
 #include "AlbumManager.h"
 
+void Develop()
+{
+	std::cout << "Name of Developer : Marom Golan Current version : 1.0.1" << std::endl;
+}
 
 int getCommandNumberFromUser()
 {
@@ -39,6 +43,7 @@ int main(void)
 
 	std::string albumName;
 	std::cout << "Welcome to Gallery!" << std::endl;
+	Develop();
 	std::cout << "===================" << std::endl;
 	std::cout << "Type " << HELP << " to a list of all supported commands" << std::endl;
 	
