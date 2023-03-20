@@ -38,7 +38,8 @@ int main(void)
 
 
 	std::string albumName;
-	std::cout << "Welcome to Gallery!" << std::endl;
+	std::cout << "Welcome to Gallery! "<< std::endl;
+	
 	std::cout << "===================" << std::endl;
 	std::cout << "Type " << HELP << " to a list of all supported commands" << std::endl;
 	

@@ -149,7 +149,7 @@ void MemoryAccess::untagUserInPicture(const std::string& albumName, const std::s
 	(*result).untagUserInPicture(userId, pictureName);
 }
 
-void MemoryAccess::closeAlbum(Album& ) 
+void MemoryAccess::closeAlbum(Album& album ) 
 {
 	// basically here we would like to delete the allocated memory we got from openAlbum
 }
@@ -181,6 +181,14 @@ void MemoryAccess::createUser(User& user)
 
 void MemoryAccess::deleteUser(const User& user)
 {
+	if (doesUserExists(user.getId()))
+	{
+		for (auto iter = m_albums.begin(); iter != m_albums.end(); iter++)
+		{
+			if (iter->getOwnerId() == user.getId())
+				iter = m_albums.erase(iter);
+		}
+	}
 	if (doesUserExists(user.getId())) {
 	
 		for (auto iter = m_users.begin(); iter != m_users.end(); ++iter) {
