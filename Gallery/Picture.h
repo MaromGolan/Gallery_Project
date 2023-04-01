@@ -19,6 +19,7 @@ public:
 
 	const std::string& getPath() const;
 	void setPath(const std::string& location);
+	void defTags(std::set<int> tags);
 
 	const std::string& getCreationDate() const;
 	void setCreationDate(const std::string& creationTime);

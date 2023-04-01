@@ -83,6 +83,12 @@ void Picture::tagUser(int userId)
 	m_usersTags.insert(userId);
 }
 
+void Picture::defTags(std::set<int> tags)
+{
+	m_usersTags = tags;
+}
+
+
 void Picture::untagUser(const User& user)
 {
 	if (isUserTagged(user)) {

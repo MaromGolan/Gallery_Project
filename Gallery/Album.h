@@ -20,6 +20,7 @@ public:
 	std::string getCreationDate() const;
 	void setCreationDate(const std::string& creationTime);
 	void setCreationDateNow();
+	void setPictureList(const std::list<Picture> pics);
 
 	bool doesPictureExists(const std::string& name) const;
 	void addPicture(const Picture& picture);

@@ -47,6 +47,12 @@ void Album::setCreationDate(const std::string& creationTime)
 	m_creationDate = creationTime;
 }
 
+void Album::setPictureList(const std::list<Picture> pics)
+{
+	m_pictures = pics;
+}
+
+
 void Album::setCreationDateNow()
 {
 	time_t now = time(nullptr);
@@ -143,8 +149,16 @@ bool Album::operator==(const Album& other) const
 
 std::ostream& operator<<(std::ostream& strOut, const Album& album)
 {
-	strOut << "[" << album.m_name << "] - created by user@"
-		<< const_cast<Album&>(album).getOwnerId() << std::endl;
+	if (album.m_name != "")
+	{
+		strOut << "[" << album.m_name << "] - created by user@"
+			<< const_cast<Album&>(album).getOwnerId() << " on: " << const_cast<Album&>(album).getCreationDate() << std::endl;
+	}
+
+	else
+	{
+		strOut << "";
+	}
 	
 	return strOut;
 }
