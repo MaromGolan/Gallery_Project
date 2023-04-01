@@ -16,7 +16,7 @@ public:
 	static int idbyname(void* data, int argc, char** argv, char** colname);
 	static int picsSql(void* data, int argc, char** argv, char** colname);
 	static int sqlusers(void* data, int argc, char** argv, char** colname);
-
+	static int Counter(void* data, int argc, char** argv, char** colname);
 
 	bool open() override;
 	void close() override;
@@ -47,6 +47,8 @@ public:
 	Picture getTopTaggedPicture() override;
 	std::list<Picture> getTaggedPicturesOfUser(const User& user) override;
 
+	bool uExists(std::list<User> u,int userId);
+	bool aExists(std::list<Album> a,std::string albumName);
 
 
 private:

@@ -60,6 +60,7 @@ int DatabaseAccess::idbyname(void* data, int argc, char** argv, char** colname)
 	{
 		if (std::string(colname[i]) == ID_COLUMN)
 			*id = atoi(argv[i]);
+			*id = atoi(argv[i]);
 	}
 	return 0;
 }
@@ -100,7 +101,13 @@ int DatabaseAccess::sqlusers(void* data, int argc, char** argv, char** colname)
 	return 0;
 }
 
+int DatabaseAccess::Counter(void* data, int argc, char** argv, char** colname)
+{
+	int* count = static_cast<int*>(data);
+	*count = argc;
+	return 0;
 
+}
 
 
 
@@ -344,39 +351,30 @@ void DatabaseAccess::createAlbum(Album& album)
 
 bool DatabaseAccess::doesAlbumExists(const std::string& albumName, int userId)
 {
-	try
-	{
-		int res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
-		std::stringstream q;
-		q << "SELECT NAME FROM ALBUMS WHERE EXISTS(SELECT ID FROM ALBUMS WHERE ID = '" << userId << "');";
-		res = sqlite3_exec(Db, q.str().c_str(), nullptr, nullptr, nullptr);
-		if (res != SQLITE_OK)
-			throw MyException("CANNOT ACCESS ALBUMS");
-		res = sqlite3_exec(Db, "END; ", nullptr, nullptr, nullptr);
-		return bool(res);
-	}
-	catch (const SqlException& e)
-	{
-		int res = sqlite3_exec(Db, "END; ", nullptr, nullptr, nullptr);
-		throw e;
-	}
-	
+	std::list<Album> a;	
+	std::stringstream q;
+	a = getAlbums();
+	return aExists(a, albumName);
+
 }
 
 bool DatabaseAccess::doesUserExists(int userId)
 {
 	try
 	{
+		bool a;
+		std::list<User> u;
 		char* errMessage = nullptr;
 		int *id;
 		int res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
 		std::stringstream q;
-		q << "SELECT ID FROM USERS WHERE EXISTS(SELECT ID FROM USERS WHERE ID = '" << userId << "');";
-		res = sqlite3_exec(Db, q.str().c_str(), nullptr, nullptr, nullptr);
+		q << "SELECT * FROM USERS;";
+		res = sqlite3_exec(Db, q.str().c_str(), sqlusers, &u, &errMessage);
 		if (res != SQLITE_OK)
-			throw MyException("CANNOT ACCESS USERS");
+			throw MyException("CANNOT GET USER");
+		a = uExists(u,userId);
 		res = sqlite3_exec(Db, "END; ", nullptr, nullptr, nullptr);
-		return bool(res);
+		return a;
 	}
 	catch (const SqlException& e)
 	{
@@ -510,15 +508,15 @@ int DatabaseAccess::countAlbumsOwnedOfUser(const User& user)
 {
 	try
 	{
-		int count = 0, res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
+		int* count;
+		int res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
 		std::stringstream q;
-		q << "SELECT COUNT(USER_ID) FROM ALBUMS WHERE USER_ID = '" << user.getId() << "';";
-		res = sqlite3_exec(Db, q.str().c_str(), nullptr, nullptr, nullptr);
+		q << "SELECT * FROM ALBUMS WHERE USER_ID = '" << user.getId() << "';";
+		res = sqlite3_exec(Db, q.str().c_str(), Counter,&count , nullptr);
 		if (res != SQLITE_OK)
 			throw MyException("CANNOT ACCESS ALBUMS");
-		count = res;
 		res = sqlite3_exec(Db, "END;", nullptr, nullptr, nullptr);
-		return count;
+		return *count;
 	}
 	catch (const SqlException& e)
 	{
@@ -531,15 +529,15 @@ int DatabaseAccess::countAlbumsTaggedOfUser(const User& user)
 {
 	try
 	{
-		int count = 0, res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
+		int* count;
+		int  res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
 		std::stringstream q;
-		q << "SELECT COUNT(USER_ID) FROM TAGS WHERE USER_ID = '" << user.getId() << "';";
-		res = sqlite3_exec(Db, q.str().c_str(), nullptr, nullptr, nullptr);
+		q << "SELECT USER_ID FROM TAGS WHERE USER_ID = '" << user.getId() << "';";
+		res = sqlite3_exec(Db, q.str().c_str(), Counter, &count, nullptr);
 		if (res != SQLITE_OK)
 			throw MyException("CANNOT ACCESS ALBUMS");
-		count = res;
 		res = sqlite3_exec(Db, "END;", nullptr, nullptr, nullptr);
-		return count;
+		return *count;
 	}
 	catch (const SqlException& e)
 	{
@@ -550,8 +548,7 @@ int DatabaseAccess::countAlbumsTaggedOfUser(const User& user)
 
 int DatabaseAccess::countTagsOfUser(const User& user)
 {
-//THIS IS LITERALLY THE SAME AS countAlbumsTaggedOfUser BECAUSE I DONT HAVE THE ALBUM YOU WANT ME TO COUNT
-	return 0;
+	return countAlbumsTaggedOfUser(user);
 }
 
 float DatabaseAccess::averageTagsPerAlbumOfUser(const User& user)
@@ -579,7 +576,8 @@ User DatabaseAccess::getTopTaggedUser()
 		int res = sqlite3_exec(Db, "BEGIN;", nullptr, nullptr, nullptr);
 		std::stringstream q;
 		q << " SELECT MAX() FROM table_name WHERE condition;";
-		//NOT DONE
+		res = sqlite3_exec(Db, "END; ", nullptr, nullptr, nullptr);
+		return User(-1, "idk what to do");
 
 	}
 	catch (const SqlException& e)
@@ -625,4 +623,24 @@ std::list<Picture> DatabaseAccess::getTaggedPicturesOfUser(const User& user)
 		throw e;
 	}
 
+}
+
+bool DatabaseAccess::uExists(std::list<User> u,int userId)
+{
+	for (User& it : u)
+	{
+		if (it.getId() == userId)
+			return true;
+	}
+	return false;
+}
+
+bool DatabaseAccess::aExists(std::list<Album> a,std::string albumName)
+{
+	for (Album& it : a)
+	{
+		if (it.getName() == albumName)
+			return true;
+	}
+	return false;
 }
