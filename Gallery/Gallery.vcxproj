@@ -99,9 +99,10 @@
   <ItemGroup>
     <ClCompile Include="Album.cpp" />
     <ClCompile Include="AlbumManager.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="EnuAllProcesses.cpp" />
     <ClCompile Include="MemoryAccess.cpp" />
     <ClCompile Include="Picture.cpp" />
+    <ClCompile Include="Terminator.cpp" />
     <ClCompile Include="User.cpp" />
     <ClCompile Include="Gallery.cpp" />
   </ItemGroup>

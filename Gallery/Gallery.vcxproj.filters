@@ -56,9 +56,6 @@
     <ClCompile Include="Album.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AlbumManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Picture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,7 +65,13 @@
     <ClCompile Include="MemoryAccess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="Terminator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EnuAllProcesses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AlbumManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

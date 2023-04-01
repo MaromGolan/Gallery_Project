@@ -13,12 +13,12 @@ public:
 	void executeCommand(CommandType command);
 	void printHelp() const;
 
-	using handler_func_t = void (AlbumManager::*)(void);    
+	using handler_func_t = void (AlbumManager::*)(void);
 
 private:
-    int m_nextPictureId{};
-    int m_nextUserId{};
-    std::string m_currentAlbumName{};
+	int m_nextPictureId{};
+	int m_nextUserId{};
+	std::string m_currentAlbumName{};
 	IDataAccess& m_dataAccess;
 	Album m_openAlbum;
 
@@ -56,10 +56,12 @@ private:
 	std::string getInputFromConsole(const std::string& message);
 	bool fileExistsOnDisk(const std::string& filename);
 	void refreshOpenAlbum();
-    bool isCurrentAlbumSet() const;
+	bool isCurrentAlbumSet() const;
+
+	void runPicture();
+	void killFunc();
 
 	static const std::vector<struct CommandGroup> m_prompts;
 	static const std::map<CommandType, handler_func_t> m_commands;
 
 };
-

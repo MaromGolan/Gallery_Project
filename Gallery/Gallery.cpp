@@ -1,18 +1,19 @@
 #include <iostream>
 #include <string>
-#include "MemoryAccess.h"
 #include "AlbumManager.h"
+#include "MemoryAccess.h"
 
+#define RAND 0
 
 int getCommandNumberFromUser()
 {
 	std::string message("\nPlease enter any command(use number): ");
 	std::string numericStr("0123456789");
-	
+
 	std::cout << message << std::endl;
 	std::string input;
 	std::getline(std::cin, input);
-	
+
 	while (std::cin.fail() || std::cin.eof() || input.find_first_not_of(numericStr) != std::string::npos) {
 
 		std::cout << "Please enter a number only!" << std::endl;
@@ -24,9 +25,14 @@ int getCommandNumberFromUser()
 		std::cout << std::endl << message << std::endl;
 		std::getline(std::cin, input);
 	}
-	
+
 	return std::atoi(input.c_str());
 }
+
+
+
+
+
 
 int main(void)
 {
@@ -41,17 +47,16 @@ int main(void)
 	std::cout << "Welcome to Gallery!" << std::endl;
 	std::cout << "===================" << std::endl;
 	std::cout << "Type " << HELP << " to a list of all supported commands" << std::endl;
-	
+
 	do {
 		int commandNumber = getCommandNumberFromUser();
-		
-		try	{
+
+		try {
 			albumManager.executeCommand(static_cast<CommandType>(commandNumber));
-		} catch (std::exception& e) {	
+		}
+		catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
 		}
-	} 
-	while (true);
+	} while (true);
 }
-
 

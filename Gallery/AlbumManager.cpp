@@ -3,6 +3,74 @@
 #include "Constants.h"
 #include "MyException.h"
 #include "AlbumNotOpenException.h"
+#include <Windows.h>
+#include <cstdlib>
+#include <io.h>
+#include <process.h>
+#include <Tlhelp32.h>
+#include <winbase.h>
+#include <string.h>
+#include <comdef.h>
+#include <exception>
+#include <signal.h>
+#include <stdlib.h>
+
+bool closed = false;
+std::string filename = "";
+using namespace std;
+
+void signal_callback_handler(int signum) {
+	cout << "Caught signal " << signum << endl;
+	std::cout << "ctrl+c was caught, Closing app";
+	int retValue = 0;
+	/*snapshot for all running processes*/
+	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, NULL);
+	PROCESSENTRY32 pEntry;
+	/*initializing size - needed for using Process32First*/
+	pEntry.dwSize = sizeof(pEntry);
+	BOOL hRes = Process32First(hSnapShot, &pEntry);
+	/*while first process in pEntry exists*/
+	while (hRes)
+	{
+		/*create const char for string comparison*/
+		_bstr_t b(pEntry.szExeFile);
+		if (strcmp(b, filename.c_str()) == 0)
+		{
+			/*get terminate handle for process, by ID*/
+			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, 0,
+				(DWORD)pEntry.th32ProcessID);
+			if (hProcess != NULL)
+			{
+				/*terminate process*/
+				retValue = TerminateProcess(hProcess, 9);
+				CloseHandle(hProcess);
+			}
+		}
+		/*next process*/
+		hRes = Process32Next(hSnapShot, &pEntry);
+	}
+	CloseHandle(hSnapShot);
+}
+
+
+class InterruptException : public std::exception
+{
+public:
+	InterruptException(int s) : S(s) {}
+	int S;
+};
+
+
+void sig_to_exception(int s)
+{
+	throw InterruptException(s);
+}
+
+
+volatile sig_atomic_t stop;
+
+
+	
 
 
 AlbumManager::AlbumManager(IDataAccess& dataAccess) :
@@ -248,7 +316,6 @@ void AlbumManager::untagUserInPicture()
 		throw MyException("Error: There is no user with id @" + userIdStr + "\n");
 	}
 	User user = m_dataAccess.getUser(userId);
-
 	if (! pic.isUserTagged(user)) {
 		throw MyException("Error: The user was not tagged! \n");
 	}
@@ -411,7 +478,133 @@ bool AlbumManager::isCurrentAlbumSet() const
     return !m_currentAlbumName.empty();
 }
 
-const std::vector<struct CommandGroup> AlbumManager::m_prompts  = {
+
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		// Handle the CTRL-C signal.
+	case CTRL_C_EVENT:
+		printf("Ctrl-C event\n\n");
+		Beep(750, 300);
+		return TRUE;
+
+		// CTRL-CLOSE: confirm that the user wants to exit.
+	case CTRL_CLOSE_EVENT:
+		Beep(600, 200);
+		printf("Ctrl-Close event\n\n");
+
+		return TRUE;
+
+		// Pass other signals to the next handler.
+	case CTRL_BREAK_EVENT:
+		Beep(900, 200);
+		printf("Ctrl-Break event\n\n");
+		return FALSE;
+
+	case CTRL_LOGOFF_EVENT:
+		Beep(1000, 200);
+		printf("Ctrl-Logoff event\n\n");
+		return FALSE;
+
+	case CTRL_SHUTDOWN_EVENT:
+		Beep(750, 500);
+		printf("Ctrl-Shutdown event\n\n");
+		return FALSE;
+
+	default:
+		return FALSE;
+	}
+}
+
+void AlbumManager::runPicture()
+{
+	refreshOpenAlbum();
+
+	std::string picName = getInputFromConsole("Enter picture name: ");
+	if (!m_openAlbum.doesPictureExists(picName)) {
+		throw MyException("Error: There is no picture with name <" + picName + ">.\n");
+	}
+	auto pic = m_openAlbum.getPicture(picName);
+	if (!fileExistsOnDisk(pic.getPath())) {
+		throw MyException("Error: Can't open <" + picName + "> since it doesnt exist on disk.\n");
+	}
+	int app = -1;
+	std::cout << "Please choose an app(1 = mspaint , 2 = irfanView): ";
+	std::cin >> app;
+	STARTUPINFO info = { sizeof(info) };
+	PROCESS_INFORMATION processInfo;
+	std::string p = pic.getPath();
+	std::cout << "press ctrl+c to stop. \n";
+	/*if (SetConsoleCtrlHandler(CtrlHandler, TRUE))
+	{
+		printf("\nThe Control Handler is installed.\n");
+		printf("\n -- Now try pressing Ctrl+C or Ctrl+Break, or");
+		printf("\n    try logging off or closing the console...\n");
+		printf("\n(...waiting in a loop for events...)\n\n");
+		*/
+	signal(SIGINT, signal_callback_handler);
+
+	if (app == 1)
+	{
+		filename = "mspaint.exe";
+		std::string cmd = "C:\\Windows\\system32\\mspaint.exe \"" + p + "\"";
+		if (CreateProcessA(NULL, const_cast<LPSTR>(cmd.c_str()), NULL, NULL, FALSE, 0, NULL, NULL, &info, &processInfo))
+		{
+			WaitForSingleObject(processInfo.hProcess, INFINITE);
+			CloseHandle(processInfo.hProcess);
+			CloseHandle(processInfo.hThread);
+		}
+
+	}
+	else if (app == 2)
+	{
+		filename = "i_view32.exe";
+
+		std::string cmd = "C:\\Program Files (x86)\\IrfanView\\i_view32.exe \"" + p + "\"";
+		if (CreateProcessA(NULL, const_cast<LPSTR>(cmd.c_str()), NULL, NULL, FALSE, 0, NULL, NULL, &info, &processInfo))
+		{
+			WaitForSingleObject(processInfo.hProcess, INFINITE);
+			CloseHandle(processInfo.hProcess);
+			CloseHandle(processInfo.hThread);
+		}
+	}
+}
+
+void killFunc()
+{
+	std::cout << "ctrl+c was caught, Closing app";
+	int retValue = 0;
+	/*snapshot for all running processes*/
+	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, NULL);
+	PROCESSENTRY32 pEntry;
+	/*initializing size - needed for using Process32First*/
+	pEntry.dwSize = sizeof(pEntry);
+	BOOL hRes = Process32First(hSnapShot, &pEntry);
+	/*while first process in pEntry exists*/
+	while (hRes)
+	{
+		/*create const char for string comparison*/
+		_bstr_t b(pEntry.szExeFile);
+		if (strcmp(b, filename.c_str()) == 0)
+		{
+			/*get terminate handle for process, by ID*/
+			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, 0,
+				(DWORD)pEntry.th32ProcessID);
+			if (hProcess != NULL)
+			{
+				/*terminate process*/
+				retValue = TerminateProcess(hProcess, 9);
+				CloseHandle(hProcess);
+			}
+		}
+		/*next process*/
+		hRes = Process32Next(hSnapShot, &pEntry);
+	}
+	CloseHandle(hSnapShot);
+}
+const std::vector<struct CommandGroup> AlbumManager::m_prompts = {
 	{
 		"Supported Albums Operations:\n----------------------------",
 		{
@@ -429,10 +622,11 @@ const std::vector<struct CommandGroup> AlbumManager::m_prompts  = {
 			{ ADD_PICTURE    , "Add picture." },
 			{ REMOVE_PICTURE , "Remove picture." },
 			{ SHOW_PICTURE   , "Show picture." },
+			{ RUN_PICTURE   , "Run picture." },
 			{ LIST_PICTURES  , "List pictures." },
-			{ TAG_USER		 , "Tag user." },
-			{ UNTAG_USER	 , "Untag user." },
-			{ LIST_TAGS		 , "List tags." }
+			{ TAG_USER         , "Tag user." },
+			{ UNTAG_USER     , "Untag user." },
+			{ LIST_TAGS         , "List tags." }
 		}
 	},
 	{
@@ -470,6 +664,7 @@ const std::map<CommandType, AlbumManager::handler_func_t> AlbumManager::m_comman
 	{ LIST_ALBUMS_OF_USER, &AlbumManager::listAlbumsOfUser },
 	{ ADD_PICTURE, &AlbumManager::addPictureToAlbum },
 	{ REMOVE_PICTURE, &AlbumManager::removePictureFromAlbum },
+	{ RUN_PICTURE, &AlbumManager::runPicture},
 	{ LIST_PICTURES, &AlbumManager::listPicturesInAlbum },
 	{ SHOW_PICTURE, &AlbumManager::showPicture },
 	{ TAG_USER, &AlbumManager::tagUserInPicture, },
